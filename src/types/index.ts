@@ -25,6 +25,8 @@ export interface MediaItem {
   updatedAt?: string;
   subtitles?: SubtitleTrack[];
   category?: string;
+  cloudStorageUrl?: string;
+  storageProvider?: 'firebase_gcs' | 'node_server' | 'indexeddb_local';
 }
 
 export interface PlaybackProgress {

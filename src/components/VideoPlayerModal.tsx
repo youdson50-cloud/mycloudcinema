@@ -99,6 +99,14 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
           return;
         }
 
+        // Direct Google Cloud / Firebase Storage streaming (Native HTTP 206 on Vercel & Cloud)
+        if (media.cloudStorageUrl && active) {
+          setVideoSrc(media.cloudStorageUrl);
+          setIsOfflineSource(false);
+          setLoadingSource(false);
+          return;
+        }
+
         // Stream from server with HTTP 206 Range support
         if (active) {
           const streamUrl = `/api/storage/stream/${userId}/${media.fileId}`;

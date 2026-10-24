@@ -85,8 +85,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     abortControllerRef.current = new AbortController();
 
     try {
-      // 1. Upload video chunks to persistent cloud storage engine
-      const { fileId, size } = await uploadVideoInChunks({
+      // 1. Upload video to cloud storage engine (Direct Google Cloud Storage on Vercel)
+      const uploadRes = await uploadVideoInChunks({
         userId,
         file: selectedFile,
         onProgress: (info) => setProgress(info),
@@ -133,15 +133,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               episodeNumber: Number(episodeNumber) || 1,
             }
           : {}),
-        fileId,
+        fileId: uploadRes.fileId,
         fileName: selectedFile.name,
-        fileSize: size,
+        fileSize: uploadRes.size,
         mimeType: selectedFile.type || 'video/mp4',
         status: 'ready',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         subtitles,
         category,
+        cloudStorageUrl: uploadRes.cloudStorageUrl,
+        storageProvider: uploadRes.storageProvider,
       };
 
       await saveMediaItem(newMedia);
@@ -407,7 +409,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   <div className="flex items-center justify-between text-xs font-medium">
                     <span className="text-white flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-                      Envoi vers le Cloud...
+                      {progress.engine === 'firebase_gcs'
+                        ? 'Transfert direct Google Cloud Storage...'
+                        : progress.engine === 'indexeddb_local'
+                        ? 'Enregistrement sécurisé sur l\'appareil...'
+                        : 'Envoi vers le Cloud...'}
                     </span>
                     <span className="text-indigo-400 font-bold">{progress.percent}%</span>
                   </div>
