@@ -1,0 +1,6 @@
+{
+  "name": "MyCloud Cinema",
+  "description": "Plateforme cloud personnelle de stockage, streaming et lecture hors ligne de films et séries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

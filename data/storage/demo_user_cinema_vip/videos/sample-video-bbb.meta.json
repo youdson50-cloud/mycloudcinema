@@ -1,0 +1,9 @@
+{
+  "fileId": "sample-video-bbb",
+  "userId": "demo_user_cinema_vip",
+  "fileName": "big_buck_bunny_trailer.mp4",
+  "mimeType": "video/mp4",
+  "size": 364544,
+  "completedAt": "2026-10-23T15:35:00.000Z",
+  "encryption": "AES-256-GCM-ENABLED"
+}

@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidMedia(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() <= 200 &&
+             (data.type == 'movie' || data.type == 'series') &&
+             data.fileId is string && data.fileId.size() <= 128 &&
+             data.fileName is string && data.fileName.size() <= 255 &&
+             data.fileSize is number && data.fileSize >= 0 &&
+             data.mimeType is string && data.mimeType.size() <= 100 &&
+             (data.status == 'ready' || data.status == 'uploading' || data.status == 'error') &&
+             data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidProgress(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.mediaId is string && data.mediaId.size() <= 128 &&
+             data.position is number && data.position >= 0 &&
+             data.duration is number && data.duration >= 0 &&
+             data.completed is bool &&
+             data.lastPlayedAt is string && data.lastPlayedAt.size() <= 50;
+    }
+
+    function isValidUser(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // Media Collection - strictly owned by the creator
+    match /media/{mediaId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(mediaId) &&
+                       isOwner(incoming().userId) &&
+                       isValidMedia(incoming());
+      allow update: if isValidId(mediaId) &&
+                       isOwner(existing().userId) &&
+                       isOwner(incoming().userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().fileId == existing().fileId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidMedia(incoming());
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // Playback Progress - synchronized cross-device per user
+    match /playback_progress/{progressId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(progressId) &&
+                       isOwner(incoming().userId) &&
+                       isValidProgress(incoming());
+      allow update: if isValidId(progressId) &&
+                       isOwner(existing().userId) &&
+                       isOwner(incoming().userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().mediaId == existing().mediaId &&
+                       isValidProgress(incoming());
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // Users Collection - private profile info
+    match /users/{userId} {
+      allow get: if isSignedIn() && (resource == null || userId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       isValidUser(incoming());
+      allow update: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUser(incoming());
+      allow delete: if isOwner(userId);
+    }
+  }
+}

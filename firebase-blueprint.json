@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "media": {
+      "title": "MediaItem",
+      "description": "Represents a stored video media file (movie or series episode) owned by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["movie", "series"] },
+        "seriesTitle": { "type": "string", "maxLength": 200 },
+        "seasonNumber": { "type": "number" },
+        "episodeNumber": { "type": "number" },
+        "fileId": { "type": "string", "maxLength": 128 },
+        "fileName": { "type": "string", "maxLength": 255 },
+        "fileSize": { "type": "number" },
+        "mimeType": { "type": "string", "maxLength": 100 },
+        "duration": { "type": "number" },
+        "thumbnailUrl": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["ready", "uploading", "error"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "type", "fileId", "fileName", "fileSize", "mimeType", "status", "createdAt"]
+    },
+    "playback_progress": {
+      "title": "PlaybackProgress",
+      "description": "Playback position and completion state for a given media item and user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "mediaId": { "type": "string", "maxLength": 128 },
+        "position": { "type": "number" },
+        "duration": { "type": "number" },
+        "completed": { "type": "boolean" },
+        "lastPlayedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "mediaId", "position", "duration", "completed", "lastPlayedAt"]
+    },
+    "user_profile": {
+      "title": "UserProfile",
+      "description": "User storage and profile preferences.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 255 },
+        "displayName": { "type": "string", "maxLength": 150 },
+        "photoUrl": { "type": "string", "maxLength": 1000 },
+        "storageUsedBytes": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/media/{mediaId}": {
+      "schema": "media",
+      "description": "Collection of media items owned by individual users."
+    },
+    "/playback_progress/{progressId}": {
+      "schema": "playback_progress",
+      "description": "Collection of playback progress entries synchronized across devices."
+    },
+    "/users/{userId}": {
+      "schema": "user_profile",
+      "description": "User profile data."
+    }
+  }
+}

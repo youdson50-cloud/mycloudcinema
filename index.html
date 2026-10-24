@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyCloud Cinema</title>
+    <meta name="description" content="Plateforme cloud personnelle de stockage, streaming et lecture hors ligne de films et séries." />
+    <meta property="og:title" content="MyCloud Cinema" />
+    <meta property="og:description" content="Plateforme cloud personnelle de stockage, streaming et lecture hors ligne de films et séries." />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MyCinema" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function() {
+        // Suppress unhandled promise rejections from Vite WebSocket when HMR is disabled in sandbox
+        window.addEventListener('unhandledrejection', function(event) {
+          const reason = event.reason;
+          const msg = reason instanceof Error ? reason.message : String(reason);
+          if (msg.includes('WebSocket') || msg.includes('[vite]')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          const msg = event.message || '';
+          if (msg.includes('WebSocket') || msg.includes('[vite]')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        const origError = console.error;
+        console.error = function(...args) {
+          const msg = args.map((a) => (a instanceof Error ? a.message : String(a))).join(' ');
+          if (msg.includes('WebSocket') || msg.includes('[vite]')) {
+            return;
+          }
+          origError.apply(console, args);
+        };
+
+        // Wrap WebSocket for vite-hmr protocol to prevent close-before-open errors in sandbox
+        if (typeof window !== 'undefined' && window.WebSocket) {
+          const NativeWebSocket = window.WebSocket;
+          const PatchedWebSocket = function(url, protocols) {
+            const isViteHmr = protocols === 'vite-hmr' || (typeof url === 'string' && url.includes('token='));
+            if (isViteHmr) {
+              const ws = new NativeWebSocket(url, protocols);
+              let hasOpened = false;
+              ws.addEventListener('open', () => { hasOpened = true; });
+              const origAddEvent = ws.addEventListener.bind(ws);
+              ws.addEventListener = function(type, listener, options) {
+                if (type === 'close') {
+                  const safeCloseListener = function(event) {
+                    if (!hasOpened) {
+                      // Benign close before open in iframe sandbox where HMR is disabled
+                      return;
+                    }
+                    listener.call(this, event);
+                  };
+                  return origAddEvent(type, safeCloseListener, options);
+                }
+                return origAddEvent(type, listener, options);
+              };
+              return ws;
+            }
+            return new NativeWebSocket(url, protocols);
+          };
+          PatchedWebSocket.prototype = NativeWebSocket.prototype;
+          PatchedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+          PatchedWebSocket.OPEN = NativeWebSocket.OPEN;
+          PatchedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+          PatchedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+          window.WebSocket = PatchedWebSocket;
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
